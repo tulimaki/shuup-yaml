@@ -1,1 +1,0 @@
-# shuup-yaml
