@@ -64,3 +64,4 @@ def _test_product(shop, sku, primary_category, additional_categories, manufactur
 
     if manufacturer:
         assert product.manufacturer.identifier == manufacturer
+        assert product.manufacturer.name != ""
