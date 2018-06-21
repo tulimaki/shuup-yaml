@@ -1,4 +1,4 @@
-Shuup Yaml
+Shuup YAML
 ==========
 
 Import categories, manufacturers and products to Shuup.
@@ -27,13 +27,12 @@ the CLA.rst file distributed with Shuup.
 License
 -------
 
-Shuup is published under Open Software License version 3.0 (OSL-3.0).
+Shuup YAML is published under Open Software License version 3.0 (OSL-3.0).
 See the LICENSE file distributed with Shuup.
 
 Some external libraries and contributions bundled with Shuup may be
 published under other compatible licenses. For these, please
-refer to VENDOR-LICENSES.md file in the source code tree or the licenses
-included within each package.
+refer to the licenses included within each package.
 
 Documentation
 -------------
