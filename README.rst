@@ -1,3 +1,9 @@
+.. image:: https://travis-ci.org/shuup/shuup-yaml.svg?branch=master
+    :target: https://travis-ci.org/shuup/shuup-yaml
+.. image:: https://codecov.io/gh/shuup/shuup-yaml/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/shuup/shuup-yaml
+
+
 Shuup YAML
 ==========
 
