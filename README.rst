@@ -1,3 +1,9 @@
+.. image:: https://travis-ci.org/shuup/shuup-yaml.svg?branch=master
+    :target: https://travis-ci.org/shuup/shuup-yaml
+.. image:: https://codecov.io/gh/shuup/shuup-yaml/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/shuup/shuup-yaml
+
+
 Shuup YAML
 ==========
 
@@ -29,10 +35,6 @@ License
 
 Shuup YAML is published under Open Software License version 3.0 (OSL-3.0).
 See the LICENSE file distributed with Shuup.
-
-Some external libraries and contributions bundled with Shuup may be
-published under other compatible licenses. For these, please
-refer to the licenses included within each package.
 
 Documentation
 -------------
