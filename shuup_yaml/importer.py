@@ -72,6 +72,14 @@ def create_from_datum(model, identifier, content, i18n_fields=(), identifier_fie
     return object
 
 
+def get_category_identifier_for_shop(shop, category_identifier):
+    return "%s-%s" % (shop.id, slugify(category_identifier))
+
+
+def get_manufacturer_identifier_for_shop(shop, manufacturer_identifier):
+    return "%s-%s" % (shop.id, slugify(manufacturer_identifier))
+
+
 class ProductImporter(object):
     i18n_props = {"name", "description"}
 
@@ -100,7 +108,8 @@ class ProductImporter(object):
         shop_product.shop_primary_image = image
 
     def _attach_category(self, product, shop_product, category_identifier, as_primary_category=False):
-        category = Category.objects.filter(identifier=category_identifier.strip()).first()
+        category = Category.objects.filter(
+            identifier=get_category_identifier_for_shop(shop_product.shop, category_identifier)).first()
         if not category:
             print("Category with identifier %r does not exist" % category_identifier)  # noqa
             return
@@ -110,8 +119,9 @@ class ProductImporter(object):
             shop_product.primary_category = category
         shop_product.categories.add(category)
 
-    def _attach_manufacturer(self, product, manufacturer_identifier):
-        manufacturer = Manufacturer.objects.filter(identifier=manufacturer_identifier.strip()).first()
+    def _attach_manufacturer(self, product, shop, manufacturer_identifier):
+        manufacturer = Manufacturer.objects.filter(
+            identifier=get_manufacturer_identifier_for_shop(shop, manufacturer_identifier)).first()
         if not manufacturer:
             print("Manufacturer with identifier %r does not exist" % manufacturer_identifier)  # noqa
             return
@@ -166,7 +176,7 @@ class ProductImporter(object):
 
         manufacturer_identifier = data.get("manufacturer_identifier")
         if manufacturer_identifier:
-            self._attach_manufacturer(product, manufacturer_identifier)
+            self._attach_manufacturer(product, self.shop, manufacturer_identifier)
 
         shop_product.save()
         product.save()
@@ -202,7 +212,8 @@ def import_categories(shop, yaml_file):
 
     for category_identifier, data in sorted(categories.items()):
         ensure_slugged_value(data, "slug")
-        category = create_from_datum(Category, category_identifier.strip(), data, i18n_props)
+        identifier = get_category_identifier_for_shop(shop, category_identifier)
+        category = create_from_datum(Category, identifier, data, i18n_props)
         category.status = CategoryStatus.VISIBLE
         category.visibility = CategoryVisibility.VISIBLE_TO_ALL
         category.save()
@@ -220,9 +231,10 @@ def import_manufacturers(shop, yaml_file, image_dir):
 
     for manufacturer_identifier, data_src in sorted(manufacturers.items()):
         image_name = data_src.pop("logo", None)
-        manufacturer = create_from_datum(Manufacturer, manufacturer_identifier.strip(), data_src)
+        identifier = get_manufacturer_identifier_for_shop(shop, manufacturer_identifier)
+        manufacturer = create_from_datum(Manufacturer, identifier, data_src)
         manufacturer.save()
-        manufacturer.shops = [shop]
+        manufacturer.shops.add(shop)
 
         if image_name:
             image_file = os.path.join(image_dir, image_name)
