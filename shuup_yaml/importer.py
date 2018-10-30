@@ -89,9 +89,10 @@ class ProductImporter(object):
         if not os.path.isfile(image_file):
             print("Image file does not exist: %s" % image_file)  # noqa
             return
+
         with open(image_file, "rb") as fp:
             data = fp.read()
-        filer_file = filer_image_from_data(None, "Products", image_name, data, sha1=True)
+        filer_file = filer_image_from_data(None, "Products", image_name.split("/")[-1], data, sha1=True)
         assert filer_file
         image, _ = ProductMedia.objects.get_or_create(product=product, file=filer_file, kind=ProductMediaKind.IMAGE)
         image.shops.add(self.shop)
@@ -158,6 +159,11 @@ class ProductImporter(object):
         if additional_category_identifier:
             self._attach_category(product, shop_product, additional_category_identifier)
 
+        additional_category_identifiers = data.get("additional_category_identifiers")
+        if additional_category_identifiers:
+            for additional_category_identifier in additional_category_identifiers.split(","):
+                self._attach_category(product, shop_product, additional_category_identifier)
+
         manufacturer_identifier = data.get("manufacturer_identifier")
         if manufacturer_identifier:
             self._attach_manufacturer(product, manufacturer_identifier)
@@ -205,17 +211,30 @@ def import_categories(shop, yaml_file):
     Category.objects.rebuild()
 
 
-def import_manufacturers(shop, yaml_file):
+def import_manufacturers(shop, yaml_file, image_dir):
     print("Loading manufacturers")  # noqa
     with open(yaml_file, "rb") as fp:
         manufacturers = yaml.safe_load(fp)
 
     print("Manufacturers loading, starting import...")  # noqa
 
-    for manufacturer_identifier, data in sorted(manufacturers.items()):
-        manufacturer = create_from_datum(Manufacturer, manufacturer_identifier.strip(), data)
+    for manufacturer_identifier, data_src in sorted(manufacturers.items()):
+        image_name = data_src.pop("logo", None)
+        manufacturer = create_from_datum(Manufacturer, manufacturer_identifier.strip(), data_src)
         manufacturer.save()
         manufacturer.shops = [shop]
+
+        if image_name:
+            image_file = os.path.join(image_dir, image_name)
+            if not os.path.isfile(image_file):
+                print("Image file does not exist: %s" % image_file)  # noqa
+                return
+
+            with open(image_file, "rb") as fp:
+                data = fp.read()
+
+            manufacturer.logo = filer_image_from_data(None, "Manufacturers", image_name.split("/")[-1], data, sha1=True)
+            manufacturer.save()
 
 
 def import_products(shop, yaml_file, image_dir, tax_class, include_images=True):
