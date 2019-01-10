@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
             manufacturer_file = os.path.join(data_path, "manufacturers.yaml")
             if os.path.isfile(manufacturer_file):
-                import_manufacturers(shop, manufacturer_file)
+                import_manufacturers(shop, manufacturer_file, img_path)
 
             product_file = os.path.join(data_path, "products.yaml")
             if os.path.isfile(product_file):

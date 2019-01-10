@@ -127,7 +127,7 @@ class ProductImporter(object):
             return
         product.manufacturer = manufacturer
 
-    def _import_product(self, sku, data):
+    def _import_product(self, sku, data):  # noqa
         product = create_from_datum(Product, sku, data, self.i18n_props, identifier_field="sku")
         price = parse_decimal_string(data.get("price", "0.00"))
         if not product:

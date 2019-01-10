@@ -56,12 +56,12 @@ def _test_product(shop, sku, primary_category, additional_categories, manufactur
     assert product
     shop_product = product.get_shop_instance(shop)
     assert shop_product
-    assert shop_product.primary_category.identifier == primary_category
-    additional_category_identifiers = [cat.identifier for cat in shop_product.categories.all()]
-    assert primary_category in additional_category_identifiers
-    for category_identifier in additional_categories:
-        assert category_identifier in additional_category_identifiers
+    assert shop_product.primary_category.name == primary_category
+    additional_category_names = [cat.name for cat in shop_product.categories.all()]
+    assert primary_category in additional_category_names
+    for category_name in additional_categories:
+        assert category_name in additional_category_names
 
     if manufacturer:
-        assert product.manufacturer.identifier == manufacturer
         assert product.manufacturer.name != ""
+        assert product.manufacturer.name == manufacturer
