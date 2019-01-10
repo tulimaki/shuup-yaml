@@ -1,5 +1,5 @@
 .. image:: https://travis-ci.org/shuup/shuup-yaml.svg?branch=master
-    :target: https://travis-ci.org/shuup/shuup-yaml
+    :target: https://travis-ci.org/shuup/shuup-yaml§
 .. image:: https://codecov.io/gh/shuup/shuup-yaml/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/shuup/shuup-yaml
 
@@ -16,12 +16,11 @@ https://shuup.com/
 Copyright
 ---------
 
-Copyright (C) 2012-2018 by Shuup Inc. <support@shuup.com>
+Copyright (C) 2012-2019 by Shoop Commerce Ltd. <support@shuup.com>
 
-Shuup is International Registered Trademark & Property of Shuup Inc.,
-Business Address: 1013 Centre Road, Suite 403-B,
-Wilmington, Delaware 19805,
-United States Of America
+Shuup is International Registered Trademark & Property of Shoop Commerce Ltd.,
+Business ID: FI27184225,
+Business Address: Iso-Roobertinkatu 20-22, 00120 HELSINKI, Finland.
 
 CLA
 ---
