@@ -13,12 +13,14 @@ from collections import defaultdict
 import six
 import yaml
 from django.utils.text import slugify
+from django.utils.translation import override
 
 from shuup.core.models import (
-    Category, CategoryStatus, CategoryVisibility, Manufacturer, Product,
-    ProductMedia, ProductMediaKind, ProductType, SalesUnit, ShopProduct,
-    Supplier
+    Attribute, AttributeType, Category, CategoryStatus, CategoryVisibility,
+    Manufacturer, Product, ProductAttribute, ProductMedia, ProductMediaKind,
+    ProductType, SalesUnit, ShopProduct, Supplier
 )
+from shuup.utils.djangoenv import has_installed
 from shuup.utils.filer import filer_image_from_data
 from shuup.utils.numbers import parse_decimal_string
 
@@ -178,6 +180,24 @@ class ProductImporter(object):
         if manufacturer_identifier:
             self._attach_manufacturer(product, self.shop, manufacturer_identifier)
 
+        attributes_data = data.get("attributes", {})
+        for attribute_identifier, value in attributes_data.items():
+            attribute = Attribute.objects.filter(identifier=attribute_identifier).first()
+            if attribute:
+                p_attribute, _ = ProductAttribute.objects.get_or_create(attribute=attribute, product=product)
+                p_attribute.value = value
+                p_attribute.save()
+
+        variation_parent_sku = data.get("variation_parent_sku")
+        variation_variable_value = data.get("variation_variable_value")
+        if has_installed("trees_shop") and variation_parent_sku and variation_variable_value:
+            parent_product = Product.objects.filter(sku=variation_parent_sku).first()
+            if parent_product:
+                from trees_shop.utils.products import link_packaging_product_to_parent
+                with override(language="en"):
+                    link_packaging_product_to_parent(parent_product, product, variation_variable_value)
+                    product.variation_name = variation_variable_value  # translated field and used for cloud
+
         shop_product.save()
         product.save()
 
@@ -251,3 +271,15 @@ def import_manufacturers(shop, yaml_file, image_dir):
 
 def import_products(shop, yaml_file, image_dir, tax_class, include_images=True):
     ProductImporter(shop, image_dir, tax_class, include_images).import_products(yaml_file)
+
+
+def import_attributes(yaml_file):
+    print("Loading attributes")  # noqa
+    with open(yaml_file, "rb") as fp:
+        attributes = yaml.safe_load(fp)
+
+    i18n_props = {"name"}
+    for attribute_identifier, data in sorted(attributes.items()):
+        attribute = create_from_datum(Attribute, attribute_identifier, data, i18n_props)
+        attribute.type = AttributeType.UNTRANSLATED_STRING
+        attribute.save()
