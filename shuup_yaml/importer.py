@@ -130,6 +130,18 @@ class ProductImporter(object):
         product.manufacturer = manufacturer
 
     def _import_product(self, sku, data):  # noqa
+        # override sku for variation children since custom sku logic in cloud
+        variation_parent_sku = data.get("variation_parent_sku")
+        if variation_parent_sku:
+            variation_variable_value = data.get("variation_variable_value")
+            parent_product = Product.objects.filter(sku=variation_parent_sku).first()
+            if parent_product:
+                from trees_shop.utils.products import get_variation_sku
+                sku = data["sku"] = get_variation_sku(parent_product, variation_variable_value)
+            else:
+                print("parent product not found -> this should not happen too often")
+                return
+
         product = create_from_datum(Product, sku, data, self.i18n_props, identifier_field="sku")
         price = parse_decimal_string(data.get("price", "0.00"))
         if not product:
@@ -197,6 +209,35 @@ class ProductImporter(object):
                 with override(language="en"):
                     link_packaging_product_to_parent(parent_product, product, variation_variable_value)
                     product.variation_name = variation_variable_value  # translated field and used for cloud
+
+                    if variation_variable_value == "1 g":
+                        product.net_weight = 1
+                    elif variation_variable_value == "3.5 g":
+                        product.net_weight = 3.5
+                    elif variation_variable_value == "7 g":
+                        product.net_weight = 7
+                    elif variation_variable_value == "15 g":
+                        product.net_weight = 15
+                    elif variation_variable_value == "1 x 0.5g":
+                        product.net_weight = 0.5
+                    elif variation_variable_value == "2 x 0.5g":
+                        product.net_weight = 1
+                    elif variation_variable_value == "3 x 0.5g":
+                        product.net_weight = 1.5
+                    elif variation_variable_value == "4 x 0.5g":
+                        product.net_weight = 2
+                    elif variation_variable_value == "5 x 0.5g":
+                        product.net_weight = 2.5
+                    elif variation_variable_value == "1 x 1g":
+                        product.net_weight = 1
+                    elif variation_variable_value == "2 x 1g":
+                        product.net_weight = 2
+                    elif variation_variable_value == "3 x 1g":
+                        product.net_weight = 3
+                    elif variation_variable_value == "4 x 1g":
+                        product.net_weight = 4
+                    elif variation_variable_value == "5 x 1g":
+                        product.net_weight = 5
 
         shop_product.save()
         product.save()
