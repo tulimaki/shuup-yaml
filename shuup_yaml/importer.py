@@ -13,12 +13,15 @@ from collections import defaultdict
 import six
 import yaml
 from django.utils.text import slugify
+from django.utils.translation import override
 
 from shuup.core.models import (
-    Category, CategoryStatus, CategoryVisibility, Manufacturer, Product,
-    ProductMedia, ProductMediaKind, ProductType, SalesUnit, ShopProduct,
-    Supplier
+    Attribute, AttributeType, Category, CategoryStatus, CategoryVisibility,
+    Manufacturer, Product, ProductAttribute, ProductMedia, ProductMediaKind,
+    ProductType, ProductVariationVariable, ProductVariationVariableValue,
+    SalesUnit, ShopProduct, Supplier
 )
+from shuup.utils.djangoenv import has_installed
 from shuup.utils.filer import filer_image_from_data
 from shuup.utils.numbers import parse_decimal_string
 
@@ -104,8 +107,10 @@ class ProductImporter(object):
         assert filer_file
         image, _ = ProductMedia.objects.get_or_create(product=product, file=filer_file, kind=ProductMediaKind.IMAGE)
         image.shops.add(self.shop)
-        product.primary_image = image
-        shop_product.shop_primary_image = image
+        if not product.primary_image:
+            product.primary_image = image
+        if not shop_product.shop_primary_image:
+            shop_product.shop_primary_image = image
 
     def _attach_category(self, product, shop_product, category_identifier, as_primary_category=False):
         category = Category.objects.filter(
@@ -161,6 +166,12 @@ class ProductImporter(object):
         if image_name and self.include_images:
             self._attach_image_from_name(product, image_name, shop_product)
 
+        additional_images = (data.get("images") or "")
+        for additional_image_name in additional_images.split(","):
+            if not additional_image_name or image_name == additional_image_name:
+                continue
+            self._attach_image_from_name(product, additional_image_name, shop_product)
+
         category_identifier = data.get("category_identifier")
         if category_identifier:
             self._attach_category(product, shop_product, category_identifier, as_primary_category=True)
@@ -177,6 +188,23 @@ class ProductImporter(object):
         manufacturer_identifier = data.get("manufacturer_identifier")
         if manufacturer_identifier:
             self._attach_manufacturer(product, self.shop, manufacturer_identifier)
+
+        attributes_data = data.get("attributes", {})
+        for attribute_identifier, value in attributes_data.items():
+            attribute = Attribute.objects.filter(identifier=attribute_identifier).first()
+            if attribute:
+                p_attribute, _ = ProductAttribute.objects.get_or_create(attribute=attribute, product=product)
+                p_attribute.value = value
+                p_attribute.save()
+
+        variation_parent_sku = data.get("variation_parent_sku")
+        variation_variable_values = data.get("variation_variable_value", "").split("-")
+        if variation_parent_sku and variation_variable_values and len(variation_variable_values) == 2:
+            parent_product = Product.objects.filter(sku=variation_parent_sku).first()
+            if parent_product:
+                color = variation_variable_values[0].strip()
+                size = variation_variable_values[1].strip()
+                product.link_to_parent(parent_product, variables={"size": size, "color": color})
 
         shop_product.save()
         product.save()
@@ -251,3 +279,24 @@ def import_manufacturers(shop, yaml_file, image_dir):
 
 def import_products(shop, yaml_file, image_dir, tax_class, include_images=True):
     ProductImporter(shop, image_dir, tax_class, include_images).import_products(yaml_file)
+
+    # Check names for pre-defined variables size and color this importer supports
+    for variation_variable in ProductVariationVariable.objects.all():
+        variation_variable.name = variation_variable.identifier.capitalize()
+        variation_variable.save()
+
+    for variable_value in ProductVariationVariableValue.objects.all():
+        variable_value.value = variable_value.identifier
+        variable_value.save()
+
+
+def import_attributes(yaml_file):
+    print("Loading attributes")  # noqa
+    with open(yaml_file, "rb") as fp:
+        attributes = yaml.safe_load(fp)
+
+    i18n_props = {"name"}
+    for attribute_identifier, data in sorted(attributes.items()):
+        attribute = create_from_datum(Attribute, attribute_identifier, data, i18n_props)
+        attribute.type = AttributeType.UNTRANSLATED_STRING
+        attribute.save()
