@@ -1,5 +1,6 @@
 *.css.map
 *.egg
+*.eggs
 *.egg-info/
 *.js.map
 *.log
